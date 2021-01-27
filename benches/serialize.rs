@@ -7,6 +7,8 @@ use petgraph::prelude::*;
 use rand::Rng;
 use test::Bencher;
 
+use petgraph::stable_graph::raw_ser::RawStableGraph;
+
 const NUM_NODES: usize = 1_000_000;
 const NUM_EDGES: usize = 100_000;
 const NUM_HOLES: usize = 1_000_000;
@@ -45,6 +47,23 @@ fn deserialize_bench(bench: &mut Bencher) {
     let data = bincode::serialize(&graph).unwrap();
     bench.iter(|| {
         let graph2: StableGraph<u32, u32> = bincode::deserialize(&data).unwrap();
+        graph2
+    });
+}
+
+#[bench]
+fn serialize_raw_bench(bench: &mut Bencher) {
+    let graph = RawStableGraph(make_stable_graph());
+    bench.iter(|| bincode::serialize(&graph).unwrap());
+}
+
+#[bench]
+fn deserialize_raw_bench(bench: &mut Bencher) {
+    let graph = RawStableGraph(make_stable_graph());
+    let data = bincode::serialize(&graph).unwrap();
+    bench.iter(|| {
+        let raw: RawStableGraph<_, _, _, _> = bincode::deserialize(&data).unwrap();
+        let graph2: StableGraph<u32, u32> = raw.0;
         graph2
     });
 }
