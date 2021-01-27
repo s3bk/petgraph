@@ -34,6 +34,8 @@ use crate::util::enumerate;
 #[cfg(feature = "serde-1")]
 mod serialization;
 
+mod raw_ser;
+
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
 /// list representation.
 ///
