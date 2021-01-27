@@ -6,6 +6,7 @@ use std::marker::PhantomData;
 use std::mem::size_of;
 use std::ops::{Index, IndexMut, Range};
 use std::slice;
+use abomonation_derive::Abomonation;
 
 use crate::{Directed, Direction, EdgeType, Incoming, IntoWeightedEdge, Outgoing, Undirected};
 
@@ -98,6 +99,7 @@ unsafe impl IndexType for u8 {
 
 /// Node identifier.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Abomonation)]
 pub struct NodeIndex<Ix = DefaultIx>(Ix);
 
 impl<Ix: IndexType> NodeIndex<Ix> {
@@ -157,6 +159,7 @@ pub fn edge_index<Ix: IndexType>(index: usize) -> EdgeIndex<Ix> {
 
 /// Edge identifier.
 #[derive(Copy, Clone, Default, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[derive(Abomonation)]
 pub struct EdgeIndex<Ix = DefaultIx>(Ix);
 
 impl<Ix: IndexType> EdgeIndex<Ix> {
@@ -213,6 +216,7 @@ const DIRECTIONS: [Direction; 2] = [Outgoing, Incoming];
 
 /// The graph's node type.
 #[derive(Debug)]
+#[derive(Abomonation)]
 pub struct Node<N, Ix = DefaultIx> {
     /// Associated node data.
     pub weight: N,
@@ -237,6 +241,7 @@ impl<N, Ix: IndexType> Node<N, Ix> {
 
 /// The graph's edge type.
 #[derive(Debug)]
+#[derive(Abomonation)]
 pub struct Edge<E, Ix = DefaultIx> {
     /// Associated edge data.
     pub weight: E,
@@ -341,6 +346,7 @@ impl<E, Ix: IndexType> Edge<E, Ix> {
 ///
 /// * Indices don't allow as much compile time checking as references.
 ///
+#[derive(Abomonation)]
 pub struct Graph<N, E, Ty = Directed, Ix = DefaultIx> {
     nodes: Vec<Node<N, Ix>>,
     edges: Vec<Edge<E, Ix>>,

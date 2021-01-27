@@ -5,7 +5,7 @@ extern crate test;
 
 use petgraph::prelude::*;
 use rand::Rng;
-use test::Bencher;
+use test::{Bencher, black_box};
 
 use petgraph::stable_graph::raw_ser::RawStableGraph;
 
@@ -92,5 +92,34 @@ fn deserialize_unsafe_raw_bench(bench: &mut Bencher) {
             StableGraph::read_raw(&mut vec.as_slice()).unwrap()
         };
         graph2
+    });
+}
+
+#[bench]
+fn serialize_abomonation_bench(bench: &mut Bencher) {
+    let graph = make_stable_graph();
+    let mut vec = Vec::with_capacity(abomonation::measure(&graph));
+    bench.iter(|| {
+        unsafe {
+            vec.clear();
+            abomonation::encode(&graph, &mut vec).unwrap();
+        }
+    });
+}
+
+#[bench]
+fn deserialize_abomonation_bench(bench: &mut Bencher) {
+    let graph = make_stable_graph();
+    let mut vec = Vec::with_capacity(abomonation::measure(&graph));
+    unsafe {
+        abomonation::encode(&graph, &mut vec).unwrap();
+    }
+
+    bench.iter(|| {
+        let mut vec2 = vec.clone();
+        let graph2: &StableGraph<u32, u32> = unsafe {
+            abomonation::decode(&mut vec2).unwrap().0
+        };
+        black_box(graph2);
     });
 }

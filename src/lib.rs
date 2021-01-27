@@ -118,6 +118,8 @@ extern crate serde_derive;
 #[cfg(all(feature = "serde-1", test))]
 extern crate itertools;
 
+use abomonation_derive::Abomonation;
+
 #[doc(no_inline)]
 pub use crate::graph::Graph;
 
@@ -221,11 +223,13 @@ pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Copy, Debug)]
+#[derive(Abomonation)]
 pub enum Directed {}
 copyclone!(Directed);
 
 /// Marker type for an undirected graph.
 #[derive(Copy, Debug)]
+#[derive(Abomonation)]
 pub enum Undirected {}
 copyclone!(Undirected);
 
