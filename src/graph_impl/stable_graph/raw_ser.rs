@@ -49,6 +49,28 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     }
 }
 
+pub struct RawStableGraph<N, E, Ty, Ix>(
+    pub StableGraph<N, E, Ty, Ix>
+);
+impl<N, E, Ty, Ix> Serialize for RawStableGraph<N, E, Ty, Ix>
+    where N: Serialize, E: Serialize, Ty: EdgeType, Ix: Serialize + IndexType
+{
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.0.serialize_raw(serializer)
+    }
+}
+impl<'de, N, E, Ty, Ix> Deserialize<'de> for RawStableGraph<N, E, Ty, Ix>
+    where N: Deserialize<'de>, E: Deserialize<'de>, Ix: IndexType + Deserialize<'de>, Ty: EdgeType
+{
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+        where D: Deserializer<'de>
+    {
+        Ok(RawStableGraph(StableGraph::deserialize_raw(deserializer)?))
+    }
+}
 
 #[derive(Serialize)]
 #[serde(bound(serialize = "N: Serialize, E: Serialize, Ix: IndexType + Serialize"))]
