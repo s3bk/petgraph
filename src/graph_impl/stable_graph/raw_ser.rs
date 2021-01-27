@@ -24,12 +24,7 @@ impl<N, E, Ty, Ix> StableGraph<N, E, Ty, Ix>
     {
         let raw = SerRawStableGraph {
             g: SerRawGraph::new(&self.g),
-            common: RawStableGraphCommon {
-                node_count: self.node_count,
-                edge_count: self.edge_count,
-                free_node: self.free_node,
-                free_edge: self.free_edge,
-            },
+            common: RawStableGraphCommon::from_stable_graph(self),
         };
         SerRawStableGraph::serialize(&raw, serializer)
     }
@@ -69,6 +64,56 @@ impl<'de, N, E, Ty, Ix> Deserialize<'de> for RawStableGraph<N, E, Ty, Ix>
         where D: Deserializer<'de>
     {
         Ok(RawStableGraph(StableGraph::deserialize_raw(deserializer)?))
+    }
+}
+
+use std::mem::{size_of, MaybeUninit};
+use std::io::{self, Read, Write};
+unsafe fn read_vec<R: std::io::Read, T>(reader: &mut R, len: usize) -> io::Result<Vec<T>> {
+    let mut data: Vec<T> = Vec::with_capacity(len);
+    let data_view: &mut [u8] = std::slice::from_raw_parts_mut(data.as_mut_ptr().cast(), len * size_of::<T>());
+    reader.read_exact(data_view)?;
+    Ok(data)
+}
+unsafe fn read_val<R: Read, T>(reader: &mut R) -> io::Result<T> {
+    let mut data = MaybeUninit::<T>::uninit();
+    let data_view: &mut [u8] = std::slice::from_raw_parts_mut(data.as_mut_ptr().cast(), size_of::<T>());
+    reader.read_exact(data_view)?;
+    Ok(data.assume_init())
+}
+unsafe fn write_val<W: Write, T>(writer: &mut W, val: &T) -> io::Result<()> {
+    let data_view: &[u8] = std::slice::from_raw_parts((val as *const T).cast(), size_of::<T>());
+    writer.write_all(&data_view)
+}
+unsafe fn write_slice<W: Write, T>(writer: &mut W, val: &[T]) -> io::Result<()> {
+    let data_view: &[u8] = std::slice::from_raw_parts(val.as_ptr().cast(), val.len() * size_of::<T>());
+    writer.write_all(&data_view)
+}
+
+impl<N, E, Ty, Ix: IndexType> StableGraph<N, E, Ty, Ix> {
+    pub unsafe fn write_raw<W: Write>(&self, writer: &mut W) -> io::Result<()>{
+        let common = RawStableGraphCommon::from_stable_graph(self);
+        write_val(writer, &common)?;
+        write_slice(writer, &self.g.nodes)?;
+        write_slice(writer, &self.g.edges)?;
+        Ok(())
+    }
+    pub unsafe fn read_raw<R: Read>(reader: &mut R) -> io::Result<Self> {
+        let common: RawStableGraphCommon<Ix> = read_val(reader)?;
+        let nodes = read_vec(reader, common.node_count)?;
+        let edges = read_vec(reader, common.edge_count)?;
+        Ok(StableGraph {
+            g: Graph { nodes, edges, ty: PhantomData },
+            node_count: common.node_count,
+            edge_count: common.edge_count,
+            free_node: common.free_node,
+            free_edge: common.free_edge
+        })
+    }
+    pub fn raw_size(&self) -> usize {
+        size_of::<RawStableGraphCommon::<Ix>>()
+        + size_of::<Node<Option<N>>>() * self.node_count 
+        + size_of::<Edge<Option<E>>>() * self.edge_count
     }
 }
 
@@ -123,6 +168,7 @@ struct DeSerRawStableGraph<N, E, Ix: IndexType> {
 }
 
 
+#[repr(C)]
 #[derive(Serialize, Deserialize)]
 #[serde(bound(serialize = "Ix: IndexType + Serialize"))]
 #[serde(bound(deserialize = "Ix: IndexType + Deserialize<'de>"))]
@@ -131,6 +177,16 @@ struct RawStableGraphCommon<Ix> {
     edge_count: usize,
     free_node: NodeIndex<Ix>,
     free_edge: EdgeIndex<Ix>,
+}
+impl<Ix: IndexType> RawStableGraphCommon<Ix> {
+    fn from_stable_graph<N, E, Ty>(g: &StableGraph<N, E, Ty, Ix>) -> Self {
+        RawStableGraphCommon {
+            node_count: g.node_count,
+            edge_count: g.edge_count,
+            free_node: g.free_node,
+            free_edge: g.free_edge,
+        }
+    }
 }
 
 fn ser_raw_graph_nodes<S, N, Ix>(

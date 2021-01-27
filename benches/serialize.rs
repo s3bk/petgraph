@@ -67,3 +67,29 @@ fn deserialize_raw_bench(bench: &mut Bencher) {
         graph2
     });
 }
+#[bench]
+fn serialize_unsafe_raw_bench(bench: &mut Bencher) {
+    let graph = make_stable_graph();
+    let mut vec = Vec::with_capacity(graph.raw_size());
+    bench.iter(|| {
+        unsafe {
+            graph.write_raw(&mut vec).unwrap();
+        }
+    });
+}
+
+#[bench]
+fn deserialize_unsafe_raw_bench(bench: &mut Bencher) {
+    let graph = make_stable_graph();
+    let mut vec = Vec::with_capacity(graph.raw_size());
+    unsafe {
+        graph.write_raw(&mut vec).unwrap();
+    }
+
+    bench.iter(|| {
+        let graph2: StableGraph<u32, u32> = unsafe {
+            StableGraph::read_raw(&mut vec.as_slice()).unwrap()
+        };
+        graph2
+    });
+}
