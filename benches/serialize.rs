@@ -73,6 +73,7 @@ fn serialize_unsafe_raw_bench(bench: &mut Bencher) {
     let mut vec = Vec::with_capacity(graph.raw_size());
     bench.iter(|| {
         unsafe {
+            vec.clear();
             graph.write_raw(&mut vec).unwrap();
         }
     });

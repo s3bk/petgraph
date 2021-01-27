@@ -69,10 +69,12 @@ impl<'de, N, E, Ty, Ix> Deserialize<'de> for RawStableGraph<N, E, Ty, Ix>
 
 use std::mem::{size_of, MaybeUninit};
 use std::io::{self, Read, Write};
-unsafe fn read_vec<R: std::io::Read, T>(reader: &mut R, len: usize) -> io::Result<Vec<T>> {
+unsafe fn read_vec<R: std::io::Read, T>(reader: &mut R) -> io::Result<Vec<T>> {
+    let len: usize = read_val(reader)?;
     let mut data: Vec<T> = Vec::with_capacity(len);
     let data_view: &mut [u8] = std::slice::from_raw_parts_mut(data.as_mut_ptr().cast(), len * size_of::<T>());
     reader.read_exact(data_view)?;
+    data.set_len(len);
     Ok(data)
 }
 unsafe fn read_val<R: Read, T>(reader: &mut R) -> io::Result<T> {
@@ -86,6 +88,7 @@ unsafe fn write_val<W: Write, T>(writer: &mut W, val: &T) -> io::Result<()> {
     writer.write_all(&data_view)
 }
 unsafe fn write_slice<W: Write, T>(writer: &mut W, val: &[T]) -> io::Result<()> {
+    write_val(writer, &val.len())?;
     let data_view: &[u8] = std::slice::from_raw_parts(val.as_ptr().cast(), val.len() * size_of::<T>());
     writer.write_all(&data_view)
 }
@@ -100,8 +103,8 @@ impl<N, E, Ty, Ix: IndexType> StableGraph<N, E, Ty, Ix> {
     }
     pub unsafe fn read_raw<R: Read>(reader: &mut R) -> io::Result<Self> {
         let common: RawStableGraphCommon<Ix> = read_val(reader)?;
-        let nodes = read_vec(reader, common.node_count)?;
-        let edges = read_vec(reader, common.edge_count)?;
+        let nodes = read_vec(reader)?;
+        let edges = read_vec(reader)?;
         Ok(StableGraph {
             g: Graph { nodes, edges, ty: PhantomData },
             node_count: common.node_count,
@@ -112,8 +115,9 @@ impl<N, E, Ty, Ix: IndexType> StableGraph<N, E, Ty, Ix> {
     }
     pub fn raw_size(&self) -> usize {
         size_of::<RawStableGraphCommon::<Ix>>()
-        + size_of::<Node<Option<N>>>() * self.node_count 
-        + size_of::<Edge<Option<E>>>() * self.edge_count
+        + 2 * size_of::<usize>()
+        + size_of::<Node<Option<N>>>() * self.g.nodes.len()
+        + size_of::<Edge<Option<E>>>() * self.g.edges.len()
     }
 }
 
