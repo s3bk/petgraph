@@ -118,6 +118,7 @@ extern crate serde_derive;
 #[cfg(all(feature = "serde-1", test))]
 extern crate itertools;
 
+#[cfg(feature="abomonate")]
 use abomonation_derive::Abomonation;
 
 #[doc(no_inline)]
@@ -223,13 +224,13 @@ pub use crate::Direction as EdgeDirection;
 
 /// Marker type for a directed graph.
 #[derive(Copy, Debug)]
-#[derive(Abomonation)]
+#[cfg_attr(feature="abomonate", derive(Abomonation))]
 pub enum Directed {}
 copyclone!(Directed);
 
 /// Marker type for an undirected graph.
 #[derive(Copy, Debug)]
-#[derive(Abomonation)]
+#[cfg_attr(feature="abomonate", derive(Abomonation))]
 pub enum Undirected {}
 copyclone!(Undirected);
 

@@ -11,6 +11,8 @@ use std::mem::replace;
 use std::mem::size_of;
 use std::ops::{Index, IndexMut};
 use std::slice;
+
+#[cfg(feature="abomonate")]
 use abomonation_derive::Abomonation;
 
 use crate::{Directed, Direction, EdgeType, Graph, Incoming, Outgoing, Undirected};
@@ -35,7 +37,7 @@ use crate::util::enumerate;
 #[cfg(feature = "serde-1")]
 mod serialization;
 
-#[cfg(feature = "serde-1")]
+#[cfg(feature = "raw_ser")]
 pub mod raw_ser;
 
 /// `StableGraph<N, E, Ty, Ix>` is a graph datastructure using an adjacency
@@ -74,7 +76,7 @@ pub mod raw_ser;
 /// Depends on crate feature `stable_graph` (default). *Stable Graph is still
 /// missing a few methods compared to Graph. You can contribute to help it
 /// achieve parity.*
-#[derive(Abomonation)]
+#[cfg_attr(feature="abomonate", derive(Abomonation))]
 pub struct StableGraph<N, E, Ty = Directed, Ix = DefaultIx> {
     g: Graph<Option<N>, Option<E>, Ty, Ix>,
     node_count: usize,

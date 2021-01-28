@@ -33,8 +33,8 @@ quickcheck = { optional = true, version = "0.8", default-features = false }
 indexmap = { version = "1.0.2" }
 serde = { version = "1.0", optional = true }
 serde_derive = { version = "1.0", optional = true }
-abomonation = "0.7.3"
-abomonation_derive = "0.5.0"
+abomonation = { version = "0.7.3", optional = true }
+abomonation_derive = { version = "0.5.0", optional = true }
 
 [dev-dependencies]
 rand = "0.5.5"
@@ -49,13 +49,15 @@ graphmap = []
 serde-1 = ["serde", "serde_derive"]
 stable_graph = []
 matrix_graph = []
+abomonate = ["abomonation", "abomonation_derive"]
+raw_ser = []
 
 # For unstable features
 generate = []
 unstable = ["generate"]
 
 # feature flags for testing use only
-all = ["unstable", "quickcheck", "matrix_graph", "stable_graph", "graphmap"]
+all = ["unstable", "quickcheck", "matrix_graph", "stable_graph", "graphmap", "abomonate", "raw_ser"]
 
 [workspace]
 members = ["serialization-tests"]
